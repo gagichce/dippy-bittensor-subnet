@@ -121,14 +121,20 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -e .
 pip install -r requirements_val_api.txt
+```
+
+#### Run
+```
 cd dippy_validation_api
 chmod +x start_validation_service.sh
 ./start_validation_service.sh
 ```
 
-### Run
+#### Stop
 ```
-
+chmod +x kill_validation_api.sh
+./kill_validation_api.sh
+```
 
 ## Model Evaluation Criteria
 ### Model Size

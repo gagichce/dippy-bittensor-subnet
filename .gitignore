@@ -11,6 +11,7 @@ __pycache__/
 leaderboard.csv
 *playground.ipynb
 dippy/data
+*venv*
 
 # C extensions
 *.so
