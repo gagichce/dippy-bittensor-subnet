@@ -63,7 +63,6 @@ def get_eval_score(
     with torch.no_grad():
         for i in tqdm.tqdm(range(0, len(contexts), batch_size), desc="Evaluating batches"):
             # Tokenize the inputs and labels
-
             prompts = tokenizer(
                 contexts[i:i+batch_size], 
                 truncation=True,
