@@ -3,6 +3,14 @@
 # Create a log directory if it doesn't exist
 mkdir -p log
 
+# Check if the ports are available using netstat
+for port in 8000 8001 8002; do
+    if netstat -tuln | grep ":$port" > /dev/null; then
+        echo "Port $port is already in use. Exiting."
+        exit 1
+    fi
+done
+
 # Function to restart a service
 restart_service() {
     local service_name=$1
@@ -29,7 +37,7 @@ echo "Starting validation_api..."
 echo $! > log/validation_api.pid
 
 # Start the eval_score_api in a loop to restart after each request
-restart_service "eval_score_api" "eval_score_api.py" "log/eval_score_api.log" "log/eval_score_api.pid" "log/eval_score_api_loop.pid" &
+restart_service "eval_score_api" "eval_score_api_vllm.py" "log/eval_score_api.log" "log/eval_score_api.pid" "log/eval_score_api_loop.pid" &
 
 # Start the vibe_score_api in a loop to restart after each request
 restart_service "vibe_score_api" "vibe_score_api.py" "log/vibe_score_api.log" "log/vibe_score_api.pid" "log/vibe_score_api_loop.pid" &

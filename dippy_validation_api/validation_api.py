@@ -154,25 +154,34 @@ def evaluate_model_logic(request: EvaluateModelRequest):
     logger.info("Model evaluation in progress")
 
     start_time = time.time()
+
     while True:
         try:
             eval_score_response = requests.post("http://localhost:8001/eval_score", json=request.model_dump())
-            if eval_score_response.status_code == 200:
-                logger.info("eval_score API call successful")
-                break
-            else:
-                raise RuntimeError(f"Error calling eval_score API: {eval_score_response.content}")
-        except Exception as e:
+        except requests.exceptions.ConnectionError as e:
+            eval_score_response = None
             if time.time() - start_time > 30:
                 # update leaderboard status to failed
-                update_leaderboard_status(request.hash, "FAILED", "Error calling eval_score API with message: " + eval_score_response.content)
+                update_leaderboard_status(request.hash, "FAILED", "Error calling eval_score API with message: " + str(e))
                 try:
                     shutdown_response = requests.post("http://localhost:8001/shutdown", timeout=1)
                 except Exception as e:
                     pass
-                raise RuntimeError(f"Error calling eval_score API: {eval_score_response.content}")
+                
+                raise RuntimeError(f"Error calling eval_score API: {eval_score_response.content.decode('utf-8')}")
+            else:
+                time.sleep(1)  # Wait for 1 second before retrying
+                continue
+        except Exception as e:
+            raise RuntimeError(f"Error calling eval_score API: {str(e)}")
         
-        time.sleep(1)  # Wait for 1 second before retrying
+
+        if eval_score_response is not None and eval_score_response.status_code == 200:
+            logger.info("eval_score API call successful")
+            break
+        else:
+            raise RuntimeError(f"Error calling eval_score API: {eval_score_response.content.decode('utf-8')}")
+        
     
     # Call the shutdown endpoint to restart the eval_score_api for the next evaluation to avoid memory leaks that were observed with loading and unloading different models
     logger.info("Shutting down eval_score_api")
@@ -190,18 +199,22 @@ def evaluate_model_logic(request: EvaluateModelRequest):
     # Call the vibe_score API
     start_time = time.time()
     while True:
-        vibe_score_response = requests.post("http://localhost:8002/vibe_match_score", json=request.model_dump())
+        try:
+            vibe_score_response = requests.post("http://localhost:8002/vibe_match_score", json=request.model_dump())
+        except requests.exceptions.ConnectionError as e:
+            if time.time() - start_time > 30:
+                # update leaderboard status to failed
+                update_leaderboard_status(request.hash, "FAILED", "Error calling vibe_score API with message: " + str(e))
+                try:
+                    shutdown_response = requests.post("http://localhost:8002/shutdown", timeout=1)
+                except Exception as e:
+                    pass
+                raise HTTPException(status_code=500, detail=f"Error calling vibe_score API: {vibe_score_response.content.decode('utf-8')}")
+        
         if vibe_score_response.status_code == 200:
             break
-        elif time.time() - start_time > 30:
-            # update leaderboard status to failed
-            try:
-                shutdown_response = requests.post("http://localhost:8002/shutdown", timeout=1)
-            except Exception as e:
-                pass
-            update_leaderboard_status(request.hash, "FAILED", "Error calling vibe_score API with message: " + vibe_score_response.content)
-            raise HTTPException(status_code=500, detail=f"Error calling vibe_score API: {vibe_score_response.content}")
-        time.sleep(1)  # Wait for 1 second before retrying
+        else:
+            raise HTTPException(status_code=500, detail=f"Error calling vibe_score API: {vibe_score_response.content.decode('utf-8')}")
     
     # Call the shutdown endpoint to restart the vibe_score_api for the next evaluation to avoid memory leaks that were observed with loading and unloading different models
 

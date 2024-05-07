@@ -244,17 +244,19 @@ def cleanup(model, model_downloaded, request: EvaluateModelRequest):
 @app.post("/eval_score")
 def eval_score(request: EvaluateModelRequest):
     # get model size score
+    model_downloaded = False
     try:
         print('Model weights downloaded successfully')
         temp_model = AutoModelForCausalLM.from_pretrained(
             f"{request.repo_namespace}/{request.repo_name}",
             revision=request.revision,
             low_cpu_mem_usage=True,
-            dtype=torch.float16,
+            torch_dtype=torch.float16,
         )
+        model_downloaded = True
         model_size = temp_model.get_memory_footprint()
         print('Model size: ', model_size, ' Bytes')
-        print("Model number of parameters: ", model.num_parameters())
+        print("Model number of parameters: ", temp_model.num_parameters())
         # check if model size is within the limit. If not, return an error
         del temp_model
         gc.collect()
@@ -299,7 +301,6 @@ def eval_score(request: EvaluateModelRequest):
             revision=request.revision,
             max_context_len_to_capture=MAX_SEQ_LEN,
             seed=0,
-            tensor_parallel_size=torch.cuda.device_count(),
             max_logprobs=tokenizer.vocab_size,
         )
     except Exception as e:
