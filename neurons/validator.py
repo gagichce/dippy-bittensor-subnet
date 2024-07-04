@@ -2,6 +2,7 @@
 # Copyright © 2023 Yuma Rao
 # Copyright © 2023 const
 import copy
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without limitation
 # the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
@@ -70,6 +71,7 @@ import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 COHERENCE_BLOCKHEIGHT = 3408878
 
+
 def iswin(score_i, score_j, block_i, block_j):
     """
     Determines the winner between two models based on the epsilon adjusted loss.
@@ -122,6 +124,7 @@ def compute_wins(
         win_rate[uid_i] = wins[uid_i] / total_matches if total_matches > 0 else 0
 
     return wins, win_rate
+
 
 def alt_compute_wins(
     uids: typing.List[int],
@@ -812,8 +815,7 @@ class Validator:
             uid_to_hotkey_and_model_metadata[uid_i] = (hotkey, model_i_metadata)
 
         bt.logging.info("Looking at model metadata", uid_to_hotkey_and_model_metadata)
-        miner_registry : Dict[int, MinerEntry] = {uid: MinerEntry() for uid in uids}
-
+        miner_registry: Dict[int, MinerEntry] = {uid: MinerEntry() for uid in uids}
 
         scores_per_uid, uid_to_block = self._fetch_scores_sync(
             uid_to_hotkey_and_model_metadata,

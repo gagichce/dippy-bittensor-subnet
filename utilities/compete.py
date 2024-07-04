@@ -1,6 +1,6 @@
 import math
 
-MAX_PENALTY = 0.025 # (2.5%)
+MAX_PENALTY = 0.025  # (2.5%)
 MAX_PENALTY_SCALE = 100
 PENALTY_THRESHOLD = 0.96
 
@@ -24,7 +24,6 @@ def calculate_penalty(block_one: int, block_two: int) -> float:
 
     penalty = MAX_PENALTY * (1 - math.exp(-k * step_difference))
     return penalty
-
 
 
 def alt_iswin(score_i, score_j, block_i, block_j):

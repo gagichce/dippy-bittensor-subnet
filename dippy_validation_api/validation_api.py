@@ -22,9 +22,8 @@ from utilities.validation_utils import (
 )
 from utilities.repo_details import (
     get_model_size,
-check_model_repo_details,
-ModelRepo,
-
+    check_model_repo_details,
+    ModelRepo,
 )
 from utilities.event_logger import EventLogger
 from scoring.common import EvaluateModelRequest
@@ -358,10 +357,7 @@ def evaluate_model(
 
     # check repo size of the model to see if it is within the limit
     try:
-        model_repo_details = check_model_repo_details(
-            request.hash,
-            request.repo_namespace,
-            request.repo_name)
+        model_repo_details = check_model_repo_details(request.hash, request.repo_namespace, request.repo_name)
         if model_repo_details is None:
             failure_notes = "Error checking model repo size. Make sure the model repository exists and is accessible."
             logger.error(failure_notes)

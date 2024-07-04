@@ -36,6 +36,7 @@ import os
 
 l = LocalMetadata(commit="x", btversion="x")
 
+
 class ModelQueue:
     @staticmethod
     def config():
