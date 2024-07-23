@@ -205,3 +205,184 @@ class PromptDataset(Dataset):
         indices = indices[:n]
 
         return [self[i] for i in indices]
+
+
+# import importlib
+# import sys
+# import os
+#
+# # Store the original sys.path
+# original_sys_path = sys.path.copy()
+#
+# # Remove the directory containing your local 'datasets' folder from sys.path
+# sys.path = [p for p in sys.path if p != 'datasets']
+#
+# # Import the 'datasets' package using importlib
+# hf_datasets = importlib.import_module('datasets')
+#
+# # Restore the original sys.path
+# sys.path = original_sys_path
+
+from datasets import load_dataset
+class CoherenceDataset(Dataset):
+    def __init__(self, dataset_id: str, split_id: str, max_input_len):
+        datass = load_dataset(dataset_id,split=split_id)
+
+        self.dataset = self.process_data(datass, max_input_len)
+        self._chat_template = None
+        self._tokenizer = None
+
+    def set_chat_template_params(self, template_path: str, tokenizer: AutoTokenizer):
+        self._chat_template = jinja2.Template(open(template_path).read())
+        self._tokenizer = tokenizer
+
+    def process_data(self, datass, max_input_len):
+        """
+        Convert dataset to a format that can be used downstream.
+        """
+
+        converted_dataset = []
+
+        for entry in datass:
+            system_prompt = f'''
+            You are roleplaying a character with the name {entry['name']}.
+            Your categories and topics of specialty are : {' '.join(entry['categories'])}.
+            Your personality can be described with the following : {','.join(entry['personalities'])}.
+            Your full character description:
+            {entry['description']}
+            '''
+            messages = [
+                {"role": "system", "content": system_prompt},
+            ]
+            for message in entry['conversation']:
+                role = "assistant" if message['role'] == 'character' else 'user'
+                messages.append(
+                {"role": role, "content": message['content']},
+                )
+            if messages[-1]["role"] == "assistant":
+                del messages[-1]
+
+            converted_dataset.append(
+                {
+                    "messages": messages,
+                }
+            )
+
+        return converted_dataset
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        if self._chat_template is None:
+            raise ValueError("Chat template is not set. Please set the chat template before generating chat.")
+
+        if self._tokenizer is None:
+            raise ValueError("Tokenizer is not set. Please set the tokenizer before generating chat.")
+        chat_input = self._chat_template.render(
+            bos_token=self._tokenizer.bos_token,
+            eos_token=self._tokenizer.eos_token,
+            messages=self.dataset[idx]["messages"],
+            include_beginning_of_conversation=True,
+            add_generation_prompt=True,
+        )  # shouldn't end with eos token
+
+        if chat_input.endswith(self._tokenizer.eos_token):
+            chat_input = chat_input[: -len(self._tokenizer.eos_token)]
+
+        if not chat_input.startswith(self._tokenizer.bos_token):
+            chat_input = f"{self._tokenizer.bos_token}{chat_input}"
+        return (
+            chat_input,  # context
+            self.dataset[idx]["messages"],  # full message history
+        )
+
+    def sample_dataset(self, n: int):
+        # get indices of the dataset
+        indices = list(range(len(self.dataset)))
+        random.shuffle(indices)
+        indices = indices[:n]
+
+        return [self[i] for i in indices]
+
+# HuggingFaceH4/ultrachat_200k
+class AugmentedCoherenceDataset(Dataset):
+    def __init__(self, dataset_id: str, split_id: str, max_input_len):
+        datass = load_dataset(dataset_id,split=split_id)
+
+        self.dataset = self.process_data(datass, max_input_len)
+        self._chat_template = None
+        self._tokenizer = None
+
+    def set_chat_template_params(self, template_path: str, tokenizer: AutoTokenizer):
+        self._chat_template = jinja2.Template(open(template_path).read())
+        self._tokenizer = tokenizer
+
+    def process_data(self, datass, max_input_len):
+        """
+        Convert dataset to a format that can be used downstream.
+        """
+
+        converted_dataset = []
+
+        for entry in datass:
+            system_prompt = f'''
+            You are roleplaying a character with the name {entry['name']}.
+            Your categories and topics of specialty are : {' '.join(entry['categories'])}.
+            Your personality can be described with the following : {','.join(entry['personalities'])}.
+            Your full character description:
+            {entry['description']}
+            '''
+            messages = [
+                {"role": "system", "content": system_prompt},
+            ]
+            for message in entry['conversation']:
+                role = "assistant" if message['role'] == 'character' else 'user'
+                messages.append(
+                {"role": role, "content": message['content']},
+                )
+            if messages[-1]["role"] == "assistant":
+                del messages[-1]
+
+            converted_dataset.append(
+                {
+                    "messages": messages,
+                }
+            )
+
+        return converted_dataset
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        if self._chat_template is None:
+            raise ValueError("Chat template is not set. Please set the chat template before generating chat.")
+
+        if self._tokenizer is None:
+            raise ValueError("Tokenizer is not set. Please set the tokenizer before generating chat.")
+        chat_input = self._chat_template.render(
+            bos_token=self._tokenizer.bos_token,
+            eos_token=self._tokenizer.eos_token,
+            messages=self.dataset[idx]["messages"],
+            include_beginning_of_conversation=True,
+            add_generation_prompt=True,
+        )  # shouldn't end with eos token
+
+        if chat_input.endswith(self._tokenizer.eos_token):
+            chat_input = chat_input[: -len(self._tokenizer.eos_token)]
+
+        if not chat_input.startswith(self._tokenizer.bos_token):
+            chat_input = f"{self._tokenizer.bos_token}{chat_input}"
+        return (
+            chat_input,  # context
+            self.dataset[idx]["messages"],  # full message history
+        )
+
+    def sample_dataset(self, n: int):
+        # get indices of the dataset
+        indices = list(range(len(self.dataset)))
+        random.shuffle(indices)
+        indices = indices[:n]
+
+        return [self[i] for i in indices]

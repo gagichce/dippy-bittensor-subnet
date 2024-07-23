@@ -54,11 +54,16 @@ class Evaluator:
                 "bind": "/app/datasets",
                 "mode": "rw",
             },
-            # f"{DEFAULT_HOME_DIR}/scoring": {
-            #     "bind": "/app/scoring",
-            #     "mode": "ro",
-            # },
         }
+        if trace:
+            self.volume_configuration[f"{DEFAULT_HOME_DIR}/scoring"] = {
+                "bind": "/app/scoring",
+                "mode": "ro",
+            }
+            self.volume_configuration[f"{DEFAULT_HOME_DIR}/evalsets"] = {
+                "bind": "/app/evalsets",
+                "mode": "rw",
+            }
         self.device_requests = [docker.types.DeviceRequest(count=-1, capabilities=[["gpu"]])]
         self.env = {
             "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY"),
@@ -73,7 +78,7 @@ class Evaluator:
         # Configure volume mounting
         volumes = self.volume_configuration
         # Configure GPU support
-        device_requests = [docker.types.DeviceRequest(count=-1, capabilities=[["gpu"]])]
+        device_requests = self.device_requests
 
         command = f"{job_type} {request.to_args()}"
         self.logger.debug("command", command=command)
@@ -92,9 +97,6 @@ class Evaluator:
 
         while container.status == "created":
             time.sleep(10)
-            container.reload()
-        while container.status == "running":
-            time.sleep(30)
             container.reload()
         result = container.wait()
         self.logger.debug(f"container_run_complete, {result}")
@@ -217,26 +219,27 @@ def entry():
 
     try:
         evaler = Evaluator(image_name=image_name, trace=True)
-        eval_result = evaler.eval_score(req)
-        print(f"eval_result : {eval_result}")
-        if isinstance(eval_result, RunError):
-            raise Exception(eval_result.error)
-        vibe_result = evaler.vibe_score(req)
-        if isinstance(vibe_result, RunError):
-            raise Exception(vibe_result.error)
-        print(f"vibe_result : {vibe_result}")
+        # eval_result = evaler.eval_score(req)
+        # print(f"eval_result : {eval_result}")
+        # if isinstance(eval_result, RunError):
+        #     raise Exception(eval_result.error)
+        # vibe_result = evaler.vibe_score(req)
+        # if isinstance(vibe_result, RunError):
+        #     raise Exception(vibe_result.error)
+        # print(f"vibe_result : {vibe_result}")
+        print("coherence start")
         coherence_result = evaler.coherence_score(req)
         if isinstance(coherence_result, RunError):
             raise Exception(coherence_result.error)
         print(f"coherence_result : {coherence_result}")
 
         scores_data = Scores()
-        scores_data.qualitative_score = eval_result.eval_score
-        scores_data.latency_score = eval_result.latency_score
-        scores_data.creativity_score = eval_result.creativity_score
-        scores_data.llm_size_score = eval_result.eval_model_size_score
-        scores_data.coherence_score = coherence_result.coherence_score
-        scores_data.vibe_score = vibe_result.vibe_score
+        # scores_data.qualitative_score = eval_result.eval_score
+        # scores_data.latency_score = eval_result.latency_score
+        # scores_data.creativity_score = eval_result.creativity_score
+        # scores_data.llm_size_score = eval_result.eval_model_size_score
+        # scores_data.coherence_score = coherence_result.coherence_score
+        # scores_data.vibe_score = vibe_result.vibe_score
 
         final_eval_score = (
             scores_data.adjusted_q_score(
